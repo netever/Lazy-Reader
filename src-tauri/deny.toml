@@ -1,0 +1,40 @@
+# License policy for Rust dependencies (docs/SPEC.md section 2, docs/adr/0003-licenses.md).
+# Run: cargo deny --manifest-path src-tauri/Cargo.toml check licenses
+
+[graph]
+# Check every platform the app ships on, not only the machine running the check.
+targets = [
+  "x86_64-pc-windows-msvc",
+  "aarch64-linux-android",
+  "armv7-linux-androideabi",
+  "x86_64-linux-android",
+  "aarch64-apple-darwin",
+  "x86_64-unknown-linux-gnu",
+]
+
+[licenses]
+allow = [
+  "MIT",
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "ISC",
+  "Zlib",
+  "BSL-1.0",
+  "Unicode-3.0",
+  "Unicode-DFS-2016",
+  "0BSD",
+  "CC0-1.0",
+  "Unlicense",
+  "CDLA-Permissive-2.0",
+  # Allowed for unmodified dependencies only, see docs/adr/0003-licenses.md
+  "MPL-2.0",
+]
+confidence-threshold = 0.9
+# The list is the policy, not every license has to appear in the tree.
+unused-allowed-license = "allow"
+
+[licenses.private]
+# The app itself is not published to crates.io
+ignore = true
