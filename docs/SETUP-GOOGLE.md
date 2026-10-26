@@ -16,6 +16,8 @@
 Раздел «Google Auth platform».
 
 1. «Branding»: название приложения и почта поддержки. Логотип не загружайте: он требует проверки бренда.
+   - Если консоль требует ссылку на политику конфиденциальности, используйте страницу из `docs/site/privacy.html`, опубликованную на GitHub Pages, например `https://<логин>.github.io/lazy-reader/privacy.html`. Главная страница — `index.html` оттуда же.
+   - В «Authorized domains» добавьте `<логин>.github.io`.
 2. «Audience»: тип **External**.
 3. «Data access» → «Add or remove scopes»: добавьте две строки:
    - `https://www.googleapis.com/auth/drive.file`
