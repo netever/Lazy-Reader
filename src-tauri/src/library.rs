@@ -9,6 +9,7 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::PathBuf;
 use std::sync::Mutex;
 
+use base64::Engine;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use sha2::{Digest, Sha256};
@@ -161,17 +162,25 @@ pub async fn import_begin(
     Ok(id)
 }
 
-/// Raw binary body; the import id comes in the `x-import-id` header.
+/// One chunk of the file, in one of two forms:
+/// - desktop: raw binary body, the import id in the `x-import-id` header;
+/// - Android: JSON `{ importId, base64 }`. Tauri on Android sends IPC through postMessage,
+///   which cannot carry binary bodies (a Uint8Array would become a JSON array of numbers).
 #[tauri::command]
 pub async fn import_chunk(request: Request<'_>, imports: State<'_, Imports>) -> Result<(), String> {
-    let InvokeBody::Raw(bytes) = request.body() else {
-        return Err("expected a binary body".into());
+    let decoded;
+    let (id, bytes): (&str, &[u8]) = match request.body() {
+        InvokeBody::Raw(bytes) => {
+            let id = request.headers().get("x-import-id").and_then(|v| v.to_str().ok());
+            (id.ok_or("missing x-import-id header")?, bytes)
+        }
+        InvokeBody::Json(value) => {
+            let id = value.get("importId").and_then(Value::as_str).ok_or("missing importId")?;
+            let data = value.get("base64").and_then(Value::as_str).ok_or("missing base64")?;
+            decoded = base64::engine::general_purpose::STANDARD.decode(data).map_err(|e| e.to_string())?;
+            (id, &decoded)
+        }
     };
-    let id = request
-        .headers()
-        .get("x-import-id")
-        .and_then(|v| v.to_str().ok())
-        .ok_or("missing x-import-id header")?;
     let mut map = imports.0.lock().unwrap();
     let pending = map.get_mut(id).ok_or("unknown import")?;
     pending.file.write_all(bytes).map_err(|e| e.to_string())?;

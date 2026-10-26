@@ -147,11 +147,19 @@ button:disabled {
   gap: 4px;
 }
 
+/* Fixed height: if the status line grew, the book area would shrink and pages would reflow. */
 .reader-status {
   justify-content: space-between;
   color: var(--muted);
   border-top: 1px solid var(--line);
-  min-height: 30px;
+  height: 30px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.reader-status span {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .reader-main {

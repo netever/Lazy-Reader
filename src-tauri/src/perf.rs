@@ -21,15 +21,23 @@ pub fn init() {
     MAIN_START.get_or_init(Instant::now);
 }
 
-/// Milliseconds since the process was created, from /proc (clock ticks are 1/100 s).
+/// Milliseconds since the process was created. The start comes from /proc/self/stat (in clock
+/// ticks since boot); "now since boot" from CLOCK_BOOTTIME, because Android apps may not read
+/// /proc/uptime.
 #[cfg(any(target_os = "android", target_os = "linux"))]
 fn since_process_ms() -> Option<u64> {
     let stat = std::fs::read_to_string("/proc/self/stat").ok()?;
     // The command name may contain spaces, so count fields after the closing parenthesis.
     let after = &stat[stat.rfind(')')? + 2..];
     let start_ticks: f64 = after.split_whitespace().nth(19)?.parse().ok()?;
-    let uptime: f64 = std::fs::read_to_string("/proc/uptime").ok()?.split_whitespace().next()?.parse().ok()?;
-    Some(((uptime - start_ticks / 100.0) * 1000.0).max(0.0) as u64)
+    // SAFETY: plain libc calls with a valid out-pointer.
+    let ticks_per_second = unsafe { libc::sysconf(libc::_SC_CLK_TCK) } as f64;
+    let mut now = libc::timespec { tv_sec: 0, tv_nsec: 0 };
+    if ticks_per_second <= 0.0 || unsafe { libc::clock_gettime(libc::CLOCK_BOOTTIME, &mut now) } != 0 {
+        return None;
+    }
+    let now_s = now.tv_sec as f64 + now.tv_nsec as f64 / 1e9;
+    Some(((now_s - start_ticks / ticks_per_second) * 1000.0).max(0.0) as u64)
 }
 
 #[cfg(not(any(target_os = "android", target_os = "linux")))]

@@ -1,12 +1,12 @@
 // Reading screen for formats rendered by foliate-js: EPUB, FB2, MOBI, AZW3, CBZ.
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { RelocateDetail, View } from "foliate-js/view.js";
 import { perfMark, readBook, updateBookInfo, type BookMeta, type Settings } from "../api";
 import { t } from "../i18n";
 import { FOLIATE_ENGINE, loadFoliateBook, metaAuthors, metaText } from "./book-loader";
 import { quoteAt, rangeOfQuote, textFrom } from "./dom-text";
 import { measureFrames, type FrameStats } from "./frame-meter";
-import { quoteMatches, type Locator } from "./locator";
+import { normalizeText, quoteMatches, type Locator } from "./locator";
 import { PositionStore } from "./position-store";
 import { ReaderChrome } from "./ReaderChrome";
 
@@ -150,12 +150,13 @@ export function FoliateReader({ meta, settings, onSettingsChange, onBack }: Prop
           first = false;
           setLoading(false);
           perfMark("first_page", `format=${meta.format}`);
-          if (saved?.cfi) {
-            // Restoring is done once; the relocate it may cause is saved like any other.
-            void repairPosition(view!, saved, d);
-            return;
-          }
+          if (saved?.cfi) void repairPosition(view!, saved, d);
         }
+        // Keep the exact reading point while it is still on screen. Otherwise every reflow
+        // (restart, font size, window size) would move it back to the start of a new page.
+        const current = store!.locator;
+        if (current?.quote && current.section === d.section?.current && d.range &&
+            normalizeText(d.range.toString()).includes(current.quote.exact)) return;
         store!.update(locatorFrom(meta, d));
       });
 
@@ -173,11 +174,26 @@ export function FoliateReader({ meta, settings, onSettingsChange, onBack }: Prop
       cancelled = true;
       window.removeEventListener("keydown", onKey);
       void store?.dispose();
-      view?.close();
-      view?.remove();
-      viewRef.current = null;
+      // Normally the layout effect below has closed the view already and cleared the ref.
+      if (view && viewRef.current === view) {
+        view.close();
+        view.remove();
+        viewRef.current = null;
+      }
     };
   }, [meta, turn]);
+
+  // Close the book while its DOM is still attached. useEffect cleanups run after React has
+  // removed the DOM, and then foliate-js cannot unobserve the section's <body> (its iframe has
+  // no document any more): the stale ResizeObserver errors every frame in Android WebView.
+  useLayoutEffect(
+    () => () => {
+      viewRef.current?.close();
+      viewRef.current?.remove();
+      viewRef.current = null;
+    },
+    [meta],
+  );
 
   useEffect(() => {
     if (viewRef.current?.renderer) applyLayout(viewRef.current, settings);

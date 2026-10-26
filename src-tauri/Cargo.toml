@@ -22,7 +22,12 @@ log = "0.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
 sha2 = "0.11"
+base64 = "0.23"
 uuid = { version = "1", features = ["v4"] }
+
+[target.'cfg(any(target_os = "android", target_os = "linux"))'.dependencies]
+# CLOCK_BOOTTIME for startup measurements (src/perf.rs)
+libc = "0.2"
 
 [dev-dependencies]
 tempfile = "3"

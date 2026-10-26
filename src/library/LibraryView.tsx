@@ -20,11 +20,13 @@ export function LibraryView({ onOpen }: Props) {
   }, []);
 
   async function onFiles(files: FileList | null) {
-    if (!files?.length) return;
+    // Copy the list: resetting the input below empties the live FileList.
+    const list = Array.from(files ?? []);
+    if (!list.length) return;
     setError(null);
     let last: BookMeta | null = null;
     try {
-      for (const file of Array.from(files)) {
+      for (const file of list) {
         setImporting(0);
         last = await importBook(file, setImporting);
       }
@@ -35,7 +37,7 @@ export function LibraryView({ onOpen }: Props) {
       setImporting(null);
       if (inputRef.current) inputRef.current.value = "";
     }
-    if (last && files.length === 1) onOpen(last);
+    if (last && list.length === 1) onOpen(last);
   }
 
   return (

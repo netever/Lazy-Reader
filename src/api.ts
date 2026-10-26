@@ -1,5 +1,6 @@
 // Calls into the Rust core (src-tauri/src). Each function maps to one Tauri command.
 import { invoke } from "@tauri-apps/api/core";
+import { isAndroid, toBase64 } from "./bytes";
 import type { StateFile } from "./reader/locator";
 
 export interface BookMeta {
@@ -24,15 +25,17 @@ export interface Settings {
   [key: string]: unknown;
 }
 
-const IMPORT_CHUNK = 4 * 1024 * 1024;
-
 /** Copy a file into the library in chunks, so big books never sit in memory whole. */
 export async function importBook(file: File, onProgress?: (fraction: number) => void): Promise<BookMeta> {
+  // Android IPC is JSON only, so chunks go as smaller base64 strings there.
+  const android = isAndroid();
+  const chunkSize = (android ? 1 : 4) * 1024 * 1024;
   const importId = await invoke<string>("import_begin", { fileName: file.name });
   try {
-    for (let offset = 0; offset < file.size; offset += IMPORT_CHUNK) {
-      const chunk = new Uint8Array(await file.slice(offset, offset + IMPORT_CHUNK).arrayBuffer());
-      await invoke("import_chunk", chunk, { headers: { "x-import-id": importId } });
+    for (let offset = 0; offset < file.size; offset += chunkSize) {
+      const chunk = new Uint8Array(await file.slice(offset, offset + chunkSize).arrayBuffer());
+      if (android) await invoke("import_chunk", { importId, base64: toBase64(chunk) });
+      else await invoke("import_chunk", chunk, { headers: { "x-import-id": importId } });
       onProgress?.(Math.min(1, (offset + chunk.length) / file.size));
     }
     return await invoke<BookMeta>("import_finish", { importId });

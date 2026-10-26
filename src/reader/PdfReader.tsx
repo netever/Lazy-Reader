@@ -1,8 +1,11 @@
 // Reading screen for PDF, on PDF.js. One page at a time, fitted to the screen.
 // PDF.js asks for byte ranges, so a file of hundreds of megabytes is not read whole.
 import { useCallback, useEffect, useRef, useState } from "react";
-import * as pdfjs from "pdfjs-dist";
-import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+// The legacy build carries polyfills. The modern one needs very recent JS (for example
+// Map.prototype.getOrInsertComputed) and fails in Android System WebView 133. Phones with an
+// old, never-updated WebView are exactly the weak devices we target. See docs/adr/0006.
+import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
+import workerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url";
 import { perfMark, readBookRange, updateBookInfo, type BookMeta, type Settings } from "../api";
 import { t } from "../i18n";
 import { measureFrames, type FrameStats } from "./frame-meter";
