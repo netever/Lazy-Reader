@@ -1,0 +1,9 @@
+{
+  "google": {
+    "desktopClientId": "",
+    "desktopClientSecret": ""
+  },
+  "dropbox": {
+    "appKey": ""
+  }
+}

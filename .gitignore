@@ -1,0 +1,29 @@
+# Node / Vite
+node_modules/
+dist/
+*.log
+
+# Rust / Tauri
+src-tauri/target/
+src-tauri/gen/schemas/
+
+# Android build output (the generated project itself is committed)
+src-tauri/gen/android/.gradle/
+src-tauri/gen/android/build/
+src-tauri/gen/android/app/build/
+src-tauri/gen/android/buildSrc/build/
+src-tauri/gen/android/local.properties
+src-tauri/gen/android/keystore.properties
+*.keystore
+*.jks
+
+# Local configuration with client IDs and secrets. See config/local.example.json
+config/local.json
+
+# Owner's books and large test files never go to git
+test-books/private/
+test-books/large/
+
+# OS
+.DS_Store
+Thumbs.db
