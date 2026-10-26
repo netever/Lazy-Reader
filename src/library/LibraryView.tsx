@@ -1,9 +1,12 @@
 // Library screen: the list of imported books and the "add book" button.
 import { useEffect, useRef, useState } from "react";
 import { importBook, listBooks, type BookMeta } from "../api";
+import { isAndroid } from "../bytes";
 import { t } from "../i18n";
 
-const ACCEPT = ".epub,.fb2,.fbz,.zip,.cbz,.pdf,.mobi,.azw3";
+// Android maps extensions to MIME types, and .fb2 has none it knows, so a filter hides FB2
+// books in the system picker. There we accept any file; import checks the format anyway.
+const ACCEPT = isAndroid() ? undefined : ".epub,.fb2,.fbz,.zip,.cbz,.pdf,.mobi,.azw3";
 
 interface Props {
   onOpen: (book: BookMeta) => void;

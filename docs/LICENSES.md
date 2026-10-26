@@ -15,7 +15,7 @@
 | └ zip.js (внутри foliate-js) | vendor | BSD-3-Clause | Чтение ZIP (EPUB, CBZ, .fb2.zip) |
 | └ fflate (внутри foliate-js) | vendor | MIT | Распаковка шрифтов в KF8 |
 | └ PDF.js (внутри foliate-js) | vendor | Apache-2.0 | Не используется, попадает в сборку отдельным чанком (ADR 0002) |
-| pdfjs-dist | 6.4.299 | Apache-2.0 | Показ PDF |
+| pdfjs-dist (legacy-сборка) | 6.4.299 | Apache-2.0 | Показ PDF (ADR 0006) |
 | react, react-dom | 19.3.1 | MIT | Интерфейс |
 | @tauri-apps/api | 2.12.4 | Apache-2.0 OR MIT | Вызовы ядра на Rust |
 
@@ -31,6 +31,8 @@
 | serde, serde_json | 1.x | MIT OR Apache-2.0 | JSON-файлы состояния |
 | sha2 | 0.11 | MIT OR Apache-2.0 | SHA-256 книг |
 | uuid | 1.x | Apache-2.0 OR MIT | Идентификаторы книг и устройства |
+| base64 | 0.23 | MIT OR Apache-2.0 | Куски импорта на Android (IPC только JSON) |
+| libc | 0.2 | MIT OR Apache-2.0 | `CLOCK_BOOTTIME` для замера запуска на Android и Linux |
 
 Только для тестов, в сборку не попадает: `tempfile` (MIT OR Apache-2.0).
 
