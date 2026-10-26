@@ -15,9 +15,10 @@
 | --- | --- |
 | macOS | Mac на Apple Silicon, macOS 26.5, `npm run tauri dev` (WKWebView) |
 | Chromium | Встроенный браузер Claude, интерфейс на `npm run dev` с заглушкой ядра (`src/dev/mock-backend.ts`). Тот же движок, что WebView2 и Android System WebView, но без CSP и ядра Tauri |
+| Windows | Redmi Book Pro 16 2024, Intel Core Ultra 7 155H, WebView2. Релизная сборка из GitHub Actions, проверял владелец |
 | Android-эмулятор | Pixel 6, Android 16 (API 36), образ Google Play, arm64, Android System WebView **133**, безоконный режим. Отладочная сборка, если не сказано иное |
 
-**Windows: сборка и тесты — да.** GitHub Actions (`windows-latest`), запуск 26 октября 2026: проверка типов, тесты JS и Rust, проверка лицензий и сборка установщика NSIS прошли за ~8 минут, установщик 2,1 МБ лежит в Artifacts (<https://github.com/netever/Lazy-Reader/actions/runs/40350696609>). **Windows: установка и запуск — да** (владелец, Redmi Book Pro 16 2024): установщик из CI ставится, приложение работает, холодный старт 475 мс (docs/PERF.md). Остальные пункты ручной проверки на Windows и реальные Android-устройства — **ждут владельца**.
+**Windows: сборка и тесты — да.** GitHub Actions (`windows-latest`), запуск 26 октября 2026: проверка типов, тесты JS и Rust, проверка лицензий и сборка установщика NSIS прошли за ~8 минут, установщик 2,1 МБ лежит в Artifacts (<https://github.com/netever/Lazy-Reader/actions/runs/40350696609>). **Windows: ручная проверка — да** (владелец, Redmi Book Pro 16 2024, 26 октября 2026). Установщик из CI ставится, приложение работает, холодный старт 475 мс (docs/PERF.md). Пройдены все пункты чек-листа: открываются EPUB, FB2, `.fb2.zip`, CBZ и PDF; листание стрелками, колесом и кликом по краям с анимацией; A+/A− не теряют место; после перезапуска та же книга на том же месте; большой PDF открывается без зависания. Реальные Android-устройства — **ждут владельца**.
 
 ## Работа прототипа
 
