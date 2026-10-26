@@ -11,7 +11,8 @@ Books:
     sample.fb2.zip           the same FB2 inside a zip
     SAMPLE-UPPER.CBZ         comic, page images named PAGE01.PNG… (upper case on purpose)
     sample.pdf               20 pages of text
-    large/big.pdf            600 pages with uncompressed images, for the large PDF check
+    large/big.pdf            600 pages with uncompressed images, flat page tree (like scanners)
+    large/big-tree.pdf       the same with a balanced page tree (like LaTeX or Word)
 """
 
 import argparse
@@ -92,35 +93,41 @@ def png(width: int, height: int, label: str) -> bytes:
     return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header) + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b"")
 
 
+def zinfo(name: str, compress=zipfile.ZIP_DEFLATED) -> zipfile.ZipInfo:
+    """Fixed timestamps, so regenerated books are byte-for-byte the same."""
+    info = zipfile.ZipInfo(name, date_time=(2026, 1, 1, 0, 0, 0))
+    info.compress_type = compress
+    return info
+
+
 # --- EPUB --------------------------------------------------------------------------------------
 
 def make_epub(path: Path):
     chs = chapters(seed=1)
     with zipfile.ZipFile(path, "w") as z:
-        z.writestr(zipfile.ZipInfo("mimetype"), "application/epub+zip", compress_type=zipfile.ZIP_STORED)
-        z.writestr("META-INF/container.xml", """<?xml version="1.0" encoding="UTF-8"?>
+        z.writestr(zinfo("mimetype", zipfile.ZIP_STORED), "application/epub+zip")
+        z.writestr(zinfo("META-INF/container.xml"), """<?xml version="1.0" encoding="UTF-8"?>
 <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
   <rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles>
-</container>""", compress_type=zipfile.ZIP_DEFLATED)
+</container>""")
         items, spine, nav = [], [], []
         for i, (title, paras) in enumerate(chs, 1):
             body = "\n".join(f"<p>{p}</p>" for p in paras)
-            z.writestr(f"OEBPS/ch{i}.xhtml", f"""<?xml version="1.0" encoding="UTF-8"?>
+            z.writestr(zinfo(f"OEBPS/ch{i}.xhtml"), f"""<?xml version="1.0" encoding="UTF-8"?>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru"><head><title>{title}</title>
 <link rel="stylesheet" href="style.css"/></head><body><h1>{title}</h1>
 {body}
 <script>document.body.dataset.scriptRan = "yes"</script>
-</body></html>""", compress_type=zipfile.ZIP_DEFLATED)
+</body></html>""")
             items.append(f'<item id="ch{i}" href="ch{i}.xhtml" media-type="application/xhtml+xml"/>')
             spine.append(f'<itemref idref="ch{i}"/>')
             nav.append(f'<li><a href="ch{i}.xhtml">{title}</a></li>')
-        z.writestr("OEBPS/nav.xhtml", f"""<?xml version="1.0" encoding="UTF-8"?>
+        z.writestr(zinfo("OEBPS/nav.xhtml"), f"""<?xml version="1.0" encoding="UTF-8"?>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Оглавление</title></head>
-<body><nav epub:type="toc"><ol>{"".join(nav)}</ol></nav></body></html>""", compress_type=zipfile.ZIP_DEFLATED)
-        z.writestr("OEBPS/style.css", "h1 { text-align: center; } p { text-indent: 1.5em; margin: 0; }",
-                   compress_type=zipfile.ZIP_DEFLATED)
-        z.writestr("OEBPS/cover.png", png(300, 450, "1"), compress_type=zipfile.ZIP_DEFLATED)
-        z.writestr("OEBPS/content.opf", f"""<?xml version="1.0" encoding="UTF-8"?>
+<body><nav epub:type="toc"><ol>{"".join(nav)}</ol></nav></body></html>""")
+        z.writestr(zinfo("OEBPS/style.css"), "h1 { text-align: center; } p { text-indent: 1.5em; margin: 0; }")
+        z.writestr(zinfo("OEBPS/cover.png"), png(300, 450, "1"))
+        z.writestr(zinfo("OEBPS/content.opf"), f"""<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="id" xml:lang="ru">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
     <dc:identifier id="id">urn:uuid:7d5b4f2e-5d1c-4c47-9f0a-000000000001</dc:identifier>
@@ -136,7 +143,7 @@ def make_epub(path: Path):
     {"".join(items)}
   </manifest>
   <spine>{"".join(spine)}</spine>
-</package>""", compress_type=zipfile.ZIP_DEFLATED)
+</package>""")
 
 
 # --- FB2 ---------------------------------------------------------------------------------------
@@ -170,13 +177,18 @@ def fb2_text() -> str:
 def make_cbz(path: Path, pages=6):
     with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as z:
         for n in range(1, pages + 1):
-            z.writestr(f"PAGE{n:02d}.PNG", png(600, 900, str(n)))
+            z.writestr(zinfo(f"PAGE{n:02d}.PNG"), png(600, 900, str(n)))
 
 
 # --- PDF ---------------------------------------------------------------------------------------
 
-def write_pdf(path: Path, pages: int, image_size=0):
-    """Minimal PDF. With `image_size`, each page carries an uncompressed gray image."""
+def write_pdf(path: Path, pages: int, image_size=0, fanout=0):
+    """Minimal PDF. With `image_size`, each page carries an uncompressed gray image.
+
+    `fanout=0` puts all pages into one flat /Kids array, as many scanners do. With `fanout=10`
+    pages are grouped under intermediate /Pages nodes, as LaTeX or Word do. PDF.js opens the
+    two very differently (docs/CHECKS.md).
+    """
     offsets = []
 
     with open(path, "wb") as f:
@@ -185,18 +197,22 @@ def write_pdf(path: Path, pages: int, image_size=0):
             f.write(f"{num} 0 obj\n".encode() + body + b"\nendobj\n")
 
         f.write(b"%PDF-1.7\n%\xe2\xe3\xcf\xd3\n")
-        # 1 catalog, 2 pages, 3 font; per page: page, content, [image]
+        # 1 catalog, 2 root pages, 3 font; per page: page, content, [image]; then group nodes
         per_page = 3 if image_size else 2
-        kids = " ".join(f"{4 + i * per_page} 0 R" for i in range(pages))
+        page_obj = [4 + i * per_page for i in range(pages)]
+        groups = [list(range(g, min(g + fanout, pages))) for g in range(0, pages, fanout)] if fanout else []
+        first_group = 4 + pages * per_page
+        parent_of = {i: first_group + gi for gi, g in enumerate(groups) for i in g}  # empty when flat
+        root_kids = [f"{first_group + gi} 0 R" for gi in range(len(groups))] if fanout else [f"{n} 0 R" for n in page_obj]
         obj(1, b"<< /Type /Catalog /Pages 2 0 R >>")
-        obj(2, f"<< /Type /Pages /Kids [{kids}] /Count {pages} >>".encode())
+        obj(2, f"<< /Type /Pages /Kids [{' '.join(root_kids)}] /Count {pages} >>".encode())
         obj(3, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
         for i in range(pages):
             page_num, content_num, image_num = 4 + i * per_page, 5 + i * per_page, 6 + i * per_page
             resources = "/Font << /F1 3 0 R >>"
             if image_size:
                 resources += f" /XObject << /Im1 {image_num} 0 R >>"
-            obj(page_num, f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
+            obj(page_num, f"<< /Type /Page /Parent {parent_of.get(i, 2)} 0 R /MediaBox [0 0 612 792] "
                           f"/Resources << {resources} >> /Contents {content_num} 0 R >>".encode())
             lines = [f"BT /F1 28 Tf 72 720 Td (Page {i + 1} of {pages}) Tj ET"]
             for k in range(20):
@@ -211,6 +227,9 @@ def write_pdf(path: Path, pages: int, image_size=0):
                 obj(image_num, f"<< /Type /XObject /Subtype /Image /Width {image_size} /Height {image_size} "
                                f"/ColorSpace /DeviceGray /BitsPerComponent 8 /Length {len(pixels)} >>\nstream\n".encode()
                     + pixels + b"\nendstream")
+        for gi, g in enumerate(groups):
+            kids = " ".join(f"{page_obj[i]} 0 R" for i in g)
+            obj(first_group + gi, f"<< /Type /Pages /Parent 2 0 R /Kids [{kids}] /Count {len(g)} >>".encode())
         xref = f.tell()
         count = max(n for n, _ in offsets) + 1
         f.write(f"xref\n0 {count}\n0000000000 65535 f \n".encode())
@@ -229,12 +248,13 @@ def main():
     fb2 = fb2_text().encode("cp1251")
     (ROOT / "sample-cp1251.fb2").write_bytes(fb2)
     with zipfile.ZipFile(ROOT / "sample.fb2.zip", "w", compression=zipfile.ZIP_DEFLATED) as z:
-        z.writestr("sample-cp1251.fb2", fb2)
+        z.writestr(zinfo("sample-cp1251.fb2"), fb2)
     make_cbz(ROOT / "SAMPLE-UPPER.CBZ")
     write_pdf(ROOT / "sample.pdf", pages=20)
     if args.large:
         (ROOT / "large").mkdir(exist_ok=True)
         write_pdf(ROOT / "large" / "big.pdf", pages=600, image_size=700)
+        write_pdf(ROOT / "large" / "big-tree.pdf", pages=600, image_size=700, fanout=10)
     for p in sorted(ROOT.rglob("*")):
         if p.is_file():
             print(f"{p.relative_to(ROOT)}  {p.stat().st_size:,} bytes")

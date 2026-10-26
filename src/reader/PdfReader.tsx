@@ -82,9 +82,11 @@ export function PdfReader({ meta, settings, onSettingsChange, onBack }: Props) {
         const a = old.animate([{ transform: "translateX(0)" }, { transform: `translateX(${-dir * w}px)` }], options);
         const b = canvas.animate([{ transform: `translateX(${dir * w}px)` }, { transform: "translateX(0)" }], options);
         await Promise.all([a.finished, b.finished]);
-        const s = await stats;
-        setTurnStats(s);
-        perfMark("page_turn", `engine=pdfjs fps=${s.fps} worst_frame_ms=${s.worstFrameMs}`);
+        // The meter finishes on its own; the next turn does not wait for it.
+        void stats.then((s) => {
+          setTurnStats(s);
+          perfMark("page_turn", `engine=pdfjs fps=${s.fps} worst_frame_ms=${s.worstFrameMs}`);
+        });
       }
       old?.remove();
       pageRef.current = n;

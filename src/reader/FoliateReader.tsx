@@ -17,9 +17,10 @@ interface Props {
   onBack: () => void;
 }
 
+// Light page until themes arrive in phase 1; otherwise a dark system theme gives black on dark.
 function bookCss(fontSize: number): string {
   return `
-    html { font-size: ${fontSize}px; }
+    html { font-size: ${fontSize}px; color-scheme: light; background: #fbfaf7; color: #1f1d1a; }
     p, li, blockquote, dd { line-height: 1.5; hyphens: auto; }
   `;
 }
@@ -74,6 +75,7 @@ export function FoliateReader({ meta, settings, onSettingsChange, onBack }: Prop
   const [progress, setProgress] = useState<{ fraction: number; label?: string }>({ fraction: 0 });
   const [turnStats, setTurnStats] = useState<FrameStats | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [title, setTitle] = useState(meta.title ?? meta.fileName);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
@@ -123,17 +125,21 @@ export function FoliateReader({ meta, settings, onSettingsChange, onBack }: Prop
       if (cancelled) return;
       applyLayout(view, settingsRef.current);
 
+      const bookTitle = metaText(book.metadata?.title);
+      if (bookTitle) setTitle(bookTitle);
       void updateBookInfo(
         meta.bookId,
-        metaText(book.metadata?.title) ?? null,
+        bookTitle,
         metaAuthors(book.metadata?.author),
-        metaText(book.metadata?.language) ?? null,
+        metaText(book.metadata?.language),
       ).catch(() => undefined);
 
       const saved = store.locator;
       let first = true;
       view.addEventListener("load", (e) => {
         const doc = (e as CustomEvent<{ doc: Document }>).detail.doc;
+        // Development builds expose section documents for checks over DevTools (docs/CHECKS.md).
+        if (import.meta.env.DEV) ((window as unknown as { __readerDocs: Document[] }).__readerDocs ??= []).push(doc);
         doc.addEventListener("keydown", onKey);
         doc.addEventListener("wheel", onWheel, { passive: true });
       });
@@ -179,8 +185,10 @@ export function FoliateReader({ meta, settings, onSettingsChange, onBack }: Prop
 
   return (
     <ReaderChrome
-      title={meta.title ?? meta.fileName}
-      status={progress.label ? `${progress.label} · ${t("reader.progress", { percent: Math.round(progress.fraction * 100) })}` : t("reader.progress", { percent: Math.round(progress.fraction * 100) })}
+      title={title}
+      status={[progress.label, t("reader.progress", { percent: Math.round(progress.fraction * 100) })]
+        .filter(Boolean)
+        .join(" · ")}
       loading={loading}
       error={error ?? (saveError && t("reader.saveFailed", { error: saveError }))}
       turnStats={turnStats}
