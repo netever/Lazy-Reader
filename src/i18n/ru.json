@@ -1,0 +1,21 @@
+{
+  "app.title": "Читалка",
+  "library.title": "Библиотека",
+  "library.empty": "Книг пока нет. Добавьте EPUB, FB2, PDF, CBZ или MOBI.",
+  "library.import": "Добавить книгу",
+  "library.importing": "Добавляю: {percent} %",
+  "library.importFailed": "Не удалось добавить книгу: {error}",
+  "library.noAuthor": "Автор не указан",
+  "reader.back": "← Библиотека",
+  "reader.loading": "Открываю книгу…",
+  "reader.openFailed": "Не удалось открыть книгу: {error}",
+  "reader.prev": "Назад",
+  "reader.next": "Вперёд",
+  "reader.fontSmaller": "A−",
+  "reader.fontBigger": "A+",
+  "reader.animation": "Анимация",
+  "reader.page": "Стр. {current} из {total}",
+  "reader.progress": "{percent} %",
+  "reader.lastTurn": "Перелистывание: {fps} кадр/с, худший кадр {worst} мс",
+  "reader.saveFailed": "Не удалось сохранить позицию: {error}"
+}

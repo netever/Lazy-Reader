@@ -1,0 +1,221 @@
+:root {
+  --bg: #fbfaf7;
+  --fg: #1f1d1a;
+  --muted: #6b665e;
+  --line: #e2ded6;
+  --accent: #2f5d8a;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  color: var(--fg);
+  background: var(--bg);
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1a18;
+    --fg: #e8e4dc;
+    --muted: #a39d92;
+    --line: #34312d;
+    --accent: #8db4dc;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+}
+
+/* Library */
+
+.library {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.library-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.library-bar h1 {
+  font-size: 22px;
+  margin: 0;
+}
+
+.library-empty,
+.library-error {
+  color: var(--muted);
+}
+
+.library-error {
+  color: #b3261e;
+}
+
+.library-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 0;
+}
+
+.library-list button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  text-align: left;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  padding: 12px 4px;
+}
+
+.book-format {
+  grid-row: span 2;
+  align-self: center;
+  font-size: 11px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+.book-author {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* Reader */
+
+.reader {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.reader-bar,
+.reader-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 14px;
+}
+
+.reader-bar {
+  border-bottom: 1px solid var(--line);
+}
+
+.reader-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.reader-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.reader-status {
+  justify-content: space-between;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  min-height: 30px;
+}
+
+.reader-main {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.reader-host,
+.foliate-view,
+.pdf-stage {
+  position: absolute;
+  inset: 0;
+}
+
+.foliate-view {
+  display: block;
+}
+
+.pdf-stage {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.pdf-page {
+  grid-area: 1 / 1;
+  background: white;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.2);
+  will-change: transform;
+}
+
+/* Edges of the page turn it; the middle stays free for text selection and swipes. */
+.tap-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 16%;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  z-index: 2;
+}
+
+.tap-prev {
+  left: 0;
+}
+
+.tap-next {
+  right: 0;
+}
+
+.reader-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+  background: var(--bg);
+  z-index: 3;
+}
+
+.reader-error {
+  color: #b3261e;
+}
